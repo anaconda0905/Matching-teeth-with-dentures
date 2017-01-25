@@ -133,10 +133,12 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                         Mat histH = calHist(mH);
                         Mat histS = calHist(mS);
                         Mat histV = calHist(mV);
-                        int hH = maxF(histH);
-                        int hS = maxF(histS);
-                        int hV = maxF(histV);
-                        Log.d(TAG, "DivideHSV: HiHist H : "+hH+" S : "+hS+" V : "+hV);
+                        cluster(histH, histS, histV);
+
+                        //int hH = maxF(histH);
+                        //int hS = maxF(histS);
+                        //int hV = maxF(histV);
+                        //Log.d(TAG, "DivideHSV: HiHist H : "+hH+" S : "+hS+" V : "+hV);
 
                         //imwrite(dir+cpicturename+"H"+".jpg",mH);
                         //imwrite(dir+cpicturename+"S"+".jpg",mS);
@@ -203,68 +205,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         mRgba.release();
     }
 
-    public boolean onTouch(View v, MotionEvent event) {
-
-        /*if (this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH))
-        {
-            // open flashlight
-          //  mJavaCameraView.openFlash();
-            //Camera cam = Camera.open();
-           // mJavaCameraView.mCamera
-           // Camera.Parameters p = cam.getParameters();
-           // p.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-            //cam.setParameters(p);
-            //cam.startPreview();
-        }*/
-
-       /* int cols = mRgba.cols();
-        int rows = mRgba.rows();
-
-        int xOffset = (mOpenCvCameraView.getWidth() - cols) / 2;
-        int yOffset = (mOpenCvCameraView.getHeight() - rows) / 2;
-
-        int x = (int)event.getX() - xOffset;
-        int y = (int)event.getY() - yOffset;
-
-        Log.i(TAG, "Touch image coordinates: (" + x + ", " + y + ")");
-
-        if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
-
-        Rect touchedRect = new Rect();
-
-        touchedRect.x = (x>4) ? x-4 : 0;
-        touchedRect.y = (y>4) ? y-4 : 0;
-
-        touchedRect.width = (x+4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
-        touchedRect.height = (y+4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
-
-        Mat touchedRegionRgba = mRgba.submat(touchedRect);
-
-        Mat touchedRegionHsv = new Mat();
-        Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
-
-        // Calculate average color of touched region
-        mBlobColorHsv = Core.sumElems(touchedRegionHsv);
-        int pointCount = touchedRect.width*touchedRect.height;
-        for (int i = 0; i < mBlobColorHsv.val.length; i++)
-            mBlobColorHsv.val[i] /= pointCount;
-
-        mBlobColorRgba = converScalarHsv2Rgba(mBlobColorHsv);
-
-        Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
-                ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
-
-        mDetector.setHsvColor(mBlobColorHsv);
-
-        Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
-
-        mIsColorSelected = true;
-
-        touchedRegionRgba.release();
-        touchedRegionHsv.release();
-    */
-        return false; // don't need subsequent touch events
-    }
+    public boolean onTouch(View v, MotionEvent event) {return false;}
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
@@ -341,7 +282,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         int S = maxF(HistS);
         int V = maxF(HistV);
 
-        cluster(H, S, V);
+        //cluster(H, S, V);
 
 
         if (bmpOut != null){
@@ -911,13 +852,18 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         Toast.makeText(this,"max : "+level, Toast.LENGTH_LONG).show();
         return level;
     }
-    public void cluster(int HistH,int HistS, int HistV){
+    public void cluster(Mat HistH,Mat HistS, Mat HistV){
 
         int[] databaseValue = {220, 200, 180, 160, 150};
         int[][] databaseHue = {{110,60},{30,},{},{},{},{}};
         int[][] databaseSaturation = {{},{},{},{},{},{}};
-
-        int min = 255;
+        double distanceOfHist = Imgproc.compareHist(HistV,HistV ,  Imgproc.CV_COMP_CORREL);
+        //CV_COMP_CHISQR
+        //method=CV_COMP_INTERSECT
+        //CV_COMP_BHATTACHARYYA
+        Toast.makeText(this,"distanceOfHist : "+distanceOfHist, Toast.LENGTH_LONG).show();
+        Log.d(TAG, "cluster : dist = "+distanceOfHist);
+        /*int min = 255;
         int H=0,S=0,V=0;
         for (int i=0; i<databaseValue.length; i++){
             if ( Math.abs(databaseValue[i]-(HistV+28)) < min){
@@ -925,7 +871,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 V = i+1;
             }
         }
-        Toast.makeText(this,"V : "+V, Toast.LENGTH_LONG).show();
+        Toast.makeText(this,"V : "+V, Toast.LENGTH_LONG).show();*/
 
         //Imgproc.cvtColor(rgba, mHSV, Imgproc.COLOR_RGBA2RGB,3);
         //Imgproc.cvtColor(rgba, mHSV, Imgproc.COLOR_RGB2HSV,3);
@@ -945,6 +891,9 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         TermCriteria criteria = new TermCriteria(TermCriteria.EPS + TermCriteria.MAX_ITER,100,0.1);
         Core.kmeans(mHSV, 2, clusteredHSV, criteria, 10, Core.KMEANS_PP_CENTERS);
         */
+    }
+    public void createNote(String message){
+
     }
 
 
