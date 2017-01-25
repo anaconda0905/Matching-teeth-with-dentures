@@ -857,7 +857,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         int[] databaseValue = {220, 200, 180, 160, 150};
         int[][] databaseHue = {{110,60},{30,},{},{},{},{}};
         int[][] databaseSaturation = {{},{},{},{},{},{}};
-        double distanceOfHist = Imgproc.compareHist(HistV,HistV ,  Imgproc.CV_COMP_CORREL);
+        double distanceOfHist = Imgproc.compareHist(HistS,HistV ,  Imgproc.CV_COMP_CORREL);
         //CV_COMP_CHISQR
         //method=CV_COMP_INTERSECT
         //CV_COMP_BHATTACHARYYA
